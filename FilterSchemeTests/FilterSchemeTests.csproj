@@ -15,7 +15,7 @@
     <PackageReference Include="Orc.FilterBuilder" Version="3.3.0" />
     <PackageReference Include="Orc.Metadata" Version="3.2.0" />
     <PackageReference Include="System.ComponentModel" Version="4.3.0" />
-    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0-preview.2.20160.6" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="4.7.0" />
   </ItemGroup>
 
 </Project>
