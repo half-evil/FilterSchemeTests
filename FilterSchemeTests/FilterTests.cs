@@ -3,11 +3,34 @@ using NUnit.Framework;
 using Orc.FilterBuilder;
 using Orc.FilterBuilder.Models;
 using Catel.Data;
+using Catel.Runtime.Serialization.Xml;
+using Catel.IoC;
+using System.IO;
+using Orc.FileSystem;
+
 namespace FilterSchemeTests
 {
     [TestFixture()]
     public class FilterTests
     {
+        private const string tempPath = @"C:\Temp\filters.xml";
+
+        [Test()]
+        [Category("Basic Save")]
+        public void OrcFilterBasicSaveScenario()
+        {
+            Type targetType = typeof(DataPointFilter);
+            FilterScheme filterscheme = new FilterScheme(targetType, "All Data");
+
+            FilterSchemes fSchemes = new FilterSchemes();
+            fSchemes.Schemes.Add(filterscheme);
+            const string FilePath = tempPath;
+            fSchemes.SaveAsXml(FilePath);
+
+            Assert.IsTrue(System.IO.File.Exists(FilePath));
+            Assert.Greater(new System.IO.FileInfo(FilePath).Length, 0);
+        }
+    
 
         [Test()]
         [Category("Save")]
@@ -30,29 +53,80 @@ namespace FilterSchemeTests
             var cGroup = new ConditionGroup() { Type = ConditionGroupType.And };
             cGroup.Items.Add(pe);
 
-            filterscheme.Root.Items.Add(cGroup);
+            //filterscheme.Root.Items.Add(cGroup);
             // filterscheme.ConditionItems.Add(cGroup)
 
             FilterSchemes fSchemes = new FilterSchemes();
             fSchemes.Schemes.Add(filterscheme);
-            const string FilePath = @"C:\Temp\filters.xml";
+            const string FilePath = tempPath;
             fSchemes.SaveAsXml(FilePath);
 
             Assert.IsTrue(System.IO.File.Exists(FilePath));
             Assert.Greater(new System.IO.FileInfo(FilePath).Length, 0);
         }
+
+        [Test()]
+        [Category("Serialize")]
+        public void OrcFilterSerializeScenario()
+        {
+            var xmlSerializer = new XmlSerializer(ServiceLocator.Default.ResolveType<Catel.Runtime.Serialization.SerializationManager>(),
+                                                     ServiceLocator.Default.ResolveType<IDataContractSerializerFactory>(),
+                                                     ServiceLocator.Default.ResolveType<IXmlNamespaceManager>(),
+                                                     ServiceLocator.Default.ResolveType<ITypeFactory>(),
+                                        ServiceLocator.Default.ResolveType<Catel.Runtime.Serialization.IObjectAdapter>());
+
+            using (var memoryStream = new MemoryStream()){
+                xmlSerializer.Serialize(new FilterScheme(), memoryStream);
+                var xml = ReadAll(memoryStream);
+            }
+
+
+            var filterSchemes = new FilterSchemes();
+            using (var fs = new FileStream(tempPath, FileMode.Open))
+            {
+                xmlSerializer.Deserialize(filterSchemes, fs);
+            }
+
+
+
+            var fileService = new FileService();
+            var fSchemes = new FilterSerializationService(
+                new DirectoryService(fileService), fileService,
+                ServiceLocator.Default.ResolveType<Catel.Runtime.Serialization.Xml.IXmlSerializer>());
+            var filters = fSchemes.LoadFiltersAsync(tempPath);
+            //Dim filters = fSchemes.LoadFiltersAsync(xmlpath)
+            filters.Wait();
+            var res = filters.Result;
+        }
+
+        public String ReadAll(MemoryStream memStream)
+        {
+            var pos = memStream.Position;
+            memStream.Position = 0;
+
+            var reader = new StreamReader(memStream);
+            var str = reader.ReadToEnd();
+
+            // Reset the position so that subsequent writes are correct.
+            memStream.Position = pos;
+
+            return str;
+    }
+        
+            
     }
 
-    /// <summary>
 
-    /// ''' Ein Datenpunkt einer Isomed-Nessung/Training
+/// <summary>
 
-    /// ''' </summary>
+/// ''' Ein Datenpunkt einer Isomed-Nessung/Training
 
-    /// ''' <remarks>Die Werte sind entsprechend den Vorgaben konvertiert und in die 
+/// ''' </summary>
 
-    /// ''' nächstliegende SI konvertiert</remarks>
-    public class DataPointFilter
+/// ''' <remarks>Die Werte sind entsprechend den Vorgaben konvertiert und in die 
+
+/// ''' nächstliegende SI konvertiert</remarks>
+public class DataPointFilter
     {
         /// <summary>
         ///     ''' Index für Array-Zugriff und DB
