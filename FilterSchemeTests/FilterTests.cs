@@ -1,7 +1,6 @@
 ﻿using System;
 using NUnit.Framework;
 using Orc.FilterBuilder;
-using Orc.FilterBuilder.Models;
 using Catel.Data;
 using Catel.Runtime.Serialization.Xml;
 using Catel.IoC;
